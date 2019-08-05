@@ -86,7 +86,6 @@ void Synthesizer::encode_states()
         bdd_names_.push_back(state_name);
         bdds_[state_name] = node_bdd;
     }
-    
     initial_state_bdd_ = encode_node(s_monitor_->initial_nodes()[0]);
 }
 

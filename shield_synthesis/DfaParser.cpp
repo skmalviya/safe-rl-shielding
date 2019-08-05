@@ -71,7 +71,11 @@ Dfa* DfaParser::parse_dfa_from_file(std::string file_name)
         label_t label;
         for (auto literal : parts) {
             int lit = std::stoi(literal);
+            // Create a mask denoting which variables are used in this transition
+            // e.g. if this transition uses variables 1 and 3 generate mask 0..0000000101
             label.mask |= ((label_size_t)1U) << (std::abs(lit) - 1);
+            // Create a mask denoting the sign fo variables used in this transition
+            // e.g. if this transition uses variables 1 and -3 generate mask 0..0000000001
             if (lit > 0) label.sign |= ((label_size_t)1U) << (std::abs(lit) - 1);
         }
         
@@ -83,7 +87,6 @@ Dfa* DfaParser::parse_dfa_from_file(std::string file_name)
         parts = split(line);
         dfa->set_variable_name(std::stoi(parts[0]), parts[1]);
     }
-    
     dfa->minimize();
     return dfa;
 }

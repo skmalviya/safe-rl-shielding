@@ -77,6 +77,7 @@ typedef struct label {
         label combined;
         combined.mask = mask | other.mask;
         combined.sign = sign | other.sign;
+        // ^ is bitwise XOR and & is bitwise AND
         combined.valid = ((sign ^ other.sign) & (mask & other.mask)) == 0;
         return combined;
     }
@@ -144,7 +145,7 @@ public:
             label_ = label;
         }
         
-        bool operator==(Edge& other) {
+        bool operator ==(Edge& other) {
             return (*target_ == *other.target_) && (label_ == other.label_);
         }
         
@@ -192,6 +193,7 @@ public:
     Dfa* clone_with_joint_variables(std::map<int, std::string> inputs, std::map<int, std::string> outputs);
     
     inline int count_bits(label_size_t n) {        
+        // returns the number of activated bits
         uint_fast32_t count = 0;
         for (; n; count++) {
             n &= n - 1;

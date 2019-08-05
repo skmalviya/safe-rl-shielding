@@ -9,13 +9,14 @@
 int main(int argc, char** argv)
 {
     if (argc < 3) {
-        std::cout << "usage: ./shield_synthesizer <num_choices> [<Path to DFA file>, ...]\n";
+        std::cout << "usage: ./shield_synthesizer <num_choices> <output_file> [<Path to DFA file>, ...]\n";
         return -1;
     }
     int num_choices = std::atoi(argv[1]);
+    std::string output_file = argv[2];
     
     std::vector<Dfa*> dfas;
-    for (int i = 2; i < argc; i++) {
+    for (int i = 3; i < argc; i++) {
         std::string file_name = argv[i];
         dfas.push_back(DfaParser::parse_dfa_from_file(file_name));
     }
@@ -30,19 +31,17 @@ int main(int argc, char** argv)
         }
     }
      
-    // std::cout << "Specification Automaton:\n" << dfa->to_string() << std::endl;
+    std::cout << "Specification Automaton:\n" << dfa->to_string() << std::endl;
 
+    std::cout << "Creating monitor..." << std::endl;
     ShieldMonitor* s_monitor = new ShieldMonitor(dfa);
-    // std::cout << "Shield Monitor:\n" << s_monitor->to_string() << std::endl;
+    std::cout << "Shield Monitor:\n" << s_monitor->to_string() << std::endl;
     
     Synthesizer* synthesizer = new Synthesizer(s_monitor, dfa->num_inputs_, num_choices);
     
     PythonFormatter* formatter = new PythonFormatter();
     synthesizer->to_output_format(formatter);
-    
-    std::string file_name = argv[2];
-    std::string raw_name = file_name.substr(0, file_name.find_first_of("."));
-    std::ofstream out_file(raw_name + formatter->get_extension());
+    std::ofstream out_file(output_file + formatter->get_extension());
     formatter->write_to_stream(out_file);
     
     return 0;

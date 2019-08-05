@@ -166,25 +166,33 @@ bool Dfa::check_label_compatibility(label_t& l1, label_t& l2)
 void Dfa::minimize()
 {   
     for (auto node : nodes_) {
+        // a map of edge targets, sorted by target node IDs
         std::map<Node*, std::vector<Edge*>> sorted;
         for (auto edge : node->edges_) {
             sorted[edge->target_].push_back(edge);
         }
         
         for (auto pair : sorted) {
+            // pair is a ('target node', <edges>) tuple
             bool changed = true;
             while (changed) {
                 changed = false;
                 int idx_1 = 0;
+                // check if idx_1 is smaller than the number of edges
                 while(idx_1 < pair.second.size()) {
                     int idx_2 = idx_1 + 1;
                     Edge* edge_1 = pair.second[idx_1];
                     label_t l1 = edge_1->label_;
+                    // take the 'next' edge in the set of edges between these nodes
                     while(idx_2 < pair.second.size()) {
+                        // check whether the edges between the nodes are the same
                         Edge* edge_2 = pair.second[idx_2];
                         label_t l2 = edge_2->label_;
                         if (l1.mask == l2.mask) {
-                            if (count_bits((l1.sign ^ l2.sign) & l1.mask) == 1) {                                
+                            // count_bits counts the number of activated bits
+                            if (count_bits((l1.sign ^ l2.sign) & l1.mask) == 1) {
+                                // remove spurious edges between two nodes
+                                // TODO fdh: figure out how this works
                                 label_size_t new_mask = l1.mask ^ ((l1.sign ^ l2.sign) & l1.mask);
                                 edge_1->label_.mask = new_mask;
                                 edge_1->label_.sign &= new_mask;
@@ -206,8 +214,10 @@ void Dfa::minimize()
 
 void Dfa::cleanup_nodes() 
 {
+    // Remove empty nodes (with no edges) and merges all final nodes into a single self-referencing final node
     std::vector<Node*> to_delete;
     for (auto node : nodes_) {
+        // delete all nodes without outgoing edges
         if (node->edges_.empty()) {
             to_delete.push_back(node);
         }
@@ -251,14 +261,13 @@ void Dfa::verify()
         bool safe = false;
         for (auto edge : node->edges_) {
             if (!edge->target_->final_) {
-                // at least one save adjacent state
+                // at least one safe adjacent state
                 safe = true;
                 break;
             }
         }
         
         if (!safe) {
-            std::cout << "Setting " << node->to_string() << " to final\n";
             node->final_ = true;
         }
     }
@@ -317,7 +326,6 @@ Dfa* Dfa::clone_with_joint_variables(std::map<int, std::string> inputs, std::map
         for (auto pair : inputs) {
             if (pair.second == name) {
                 std::cout << name << "has index " << pair.first << std::endl;
-                
                 target_index = pair.first;
                 break;
             }
@@ -340,7 +348,6 @@ Dfa* Dfa::clone_with_joint_variables(std::map<int, std::string> inputs, std::map
         for (auto pair : outputs) {
             if (pair.second == name) {
                 std::cout << name << "has index " << pair.first << std::endl;
-                
                 target_index = pair.first;
                 break;
             }

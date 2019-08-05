@@ -7,7 +7,7 @@ SOURCES    = $(wildcard *.cpp)
 OBJECTS    = $(patsubst %,%,${SOURCES:.cpp=.o})
 CXX        = g++
 FLAGS      = -Wall -c -std=c++11 -O3 -march=native
-LIBS       = -L$(CUDD_PATH)/lib -l cudd -l obj
+LIBS       = -L$(CUDD_PATH)/lib -l cudd
 INCLUDE    = -I$(CUDD_PATH)/include
 
 all: $(EXECUTABLE) 
