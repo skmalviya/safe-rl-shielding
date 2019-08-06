@@ -92,19 +92,19 @@ Dfa(0, 0, 0)
             label_t label;
             // combine the labels for each transition into a single label
             for(auto edge : combo_edge){
-                label.merge(edge->label_);
+                label = label.merge(edge->label_);
                 if(!label.valid){
-                    // TODO: how to deal with invalid label? This would mean that the input dfas
-                    // cannot be combined?
-                    std::cout << "Invalid label combination!" << std::endl;
-                    exit(EXIT_FAILURE);
+                    // label is invalid, e.g. this combination of transitions can never happen
+                    break;
                 }
                 subnode_targets.insert(edge->target_);
             }
-            // find target pdfa node by following underlying node set in 'reverse' subnode->node map
-            ProductDfaNode* target_node = subnode_node_map[subnode_targets];
-            // insert link from pdfa node to pdfa node w/ combined label
-            add_edge(pdfa_node, target_node, label);
+            if(label.valid){
+                // find target pdfa node by following underlying node set in 'reverse' subnode->node map
+                ProductDfaNode* target_node = subnode_node_map[subnode_targets];
+                // insert link from pdfa node to pdfa node w/ combined label
+                add_edge(pdfa_node, target_node, label);
+            }
         }
     }
 

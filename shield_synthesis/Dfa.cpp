@@ -177,13 +177,13 @@ void Dfa::minimize()
             bool changed = true;
             while (changed) {
                 changed = false;
-                int idx_1 = 0;
+                int idx_1 = 0; //index of an edge
                 // check if idx_1 is smaller than the number of edges
                 while(idx_1 < pair.second.size()) {
-                    int idx_2 = idx_1 + 1;
-                    Edge* edge_1 = pair.second[idx_1];
+                    int idx_2 = idx_1 + 1; //index of another edge
+                    Edge* edge_1 = pair.second[idx_1]; // select the next edge
                     label_t l1 = edge_1->label_;
-                    // take the 'next' edge in the set of edges between these nodes
+                    // take the subsequent 'next' edge in the set of edges between these nodes
                     while(idx_2 < pair.second.size()) {
                         // check whether the edges between the nodes are the same
                         Edge* edge_2 = pair.second[idx_2];

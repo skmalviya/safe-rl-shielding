@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 
     std::cout << "Creating monitor..." << std::endl;
     ShieldMonitor* s_monitor = new ShieldMonitor(dfa);
+    std::cout << "Shield monitor states: " << s_monitor->nodes_.size() << std::endl;
     std::cout << "Shield Monitor:\n" << s_monitor->to_string() << std::endl;
     
     Synthesizer* synthesizer = new Synthesizer(s_monitor, dfa->num_inputs_, num_choices);
