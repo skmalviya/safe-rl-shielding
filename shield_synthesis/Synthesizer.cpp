@@ -30,6 +30,13 @@ void Synthesizer::synthesize()
             variable_idx++;
         }
     }
+
+    // TODO: remove
+    std::cout << "Variables in BDD" << std::endl;
+    for(auto pair: variables_){
+        std::cout << pair.first << std::endl;
+    }
+
     
     // std::cout << "Input variables: \n";
 //     for (auto name : input_vars_) {
@@ -511,6 +518,7 @@ BDD Synthesizer::strategy_for_mulitple_desgin_choices(BDD strategy, int num_desi
         abstract_outputs.push_back(bdds_["v" + std::to_string(variables_[s_monitor_->names_[i]])]);
         shield_outputs.push_back(bdds_["v" + std::to_string(variables_[s_monitor_->names_[s_monitor_->num_inputs_ - num_inputs_ + i]])]);
     }
+    std::cout << "Abstract outputs size " << abstract_outputs.size() << std::endl;
     
     std::vector<BDD> sub_strategies;
     std::vector<BDD> sub_transitions;
@@ -521,10 +529,11 @@ BDD Synthesizer::strategy_for_mulitple_desgin_choices(BDD strategy, int num_desi
     for (int i = 0; i < num_design_choices; i++) {
         std::vector<BDD> concrete_outputs;
         
-        
         for (auto old_bdd : abstract_outputs) {
             BDD new_bdd = IthVar(bdds_.size());
             std::string state_name = bdd_names_[old_bdd.NodeReadIndex()] + "_" + std::to_string(i + 1);
+            // TODO: remove
+            std::cout << "Synthesizer State Names for choices: " << num_design_choices << std::endl;
             std::cout << state_name << ": " << new_bdd << std::endl;
             bdd_names_.push_back(state_name);
             bdds_[state_name] = new_bdd;
@@ -541,6 +550,7 @@ BDD Synthesizer::strategy_for_mulitple_desgin_choices(BDD strategy, int num_desi
         sub_transitions.push_back(transition_bdd_.SwapVariables(abstract_outputs, concrete_outputs));
         
         sub_strategies.push_back(substituted); 
+        std::cout << "Abstract outputs size (" << i << "):" << abstract_outputs.size() << std::endl;
         
     }
     
