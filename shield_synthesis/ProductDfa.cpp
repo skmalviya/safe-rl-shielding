@@ -92,14 +92,14 @@ Dfa(0, 0, 0)
             label_t label;
             // combine the labels for each transition into a single label
             for(auto edge : combo_edge){
-                label.merge(edge->label_);
+                label = label.merge(edge->label_);
                 if(!label.valid){
                     // TODO: how to deal with invalid label? This would mean that the input dfas
                     // cannot be combined?
-                    std::cout << "Invalid label combination!" << std::endl;
-                    exit(EXIT_FAILURE);
+                    //std::cout << "Invalid label combination!" << std::endl;
+                } else {
+                    subnode_targets.insert(edge->target_);
                 }
-                subnode_targets.insert(edge->target_);
             }
             // find target pdfa node by following underlying node set in 'reverse' subnode->node map
             ProductDfaNode* target_node = subnode_node_map[subnode_targets];
@@ -179,7 +179,7 @@ std::vector<std::vector<Dfa::Edge*>> ProductDfa::create_cartesian( std::vector<s
                 r.back().push_back(y);
             }
         }
-        s = move(r);
+        s.swap(r);
     }
     return s;
 }
@@ -195,7 +195,7 @@ std::vector<std::vector<Dfa::Node*>> ProductDfa::create_cartesian( std::vector<s
                 r.back().push_back(y);
             }
         }
-        s = move(r);
+        s.swap(r);
     }
     return s;
 }
