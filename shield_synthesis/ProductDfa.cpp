@@ -94,8 +94,11 @@ Dfa(0, 0, 0)
             for(auto edge : combo_edge){
                 label = label.merge(edge->label_);
                 if(!label.valid){
-                    // TODO: how to deal with invalid label? This would mean that the input dfas
-                    // cannot be combined?
+                    // TODO: verify+implement the following possible optimization. skip the
+                    // addition of the target if one of its labels is not valid. Maintain a bool
+                    // that indicates whether a invalid label has been found for the current
+                    // `subnode_targets` and only add if it is false. `break` the combo_edge loop
+                    // if an invalid label is found
                     //std::cout << "Invalid label combination!" << std::endl;
                 } else {
                     subnode_targets.insert(edge->target_);
