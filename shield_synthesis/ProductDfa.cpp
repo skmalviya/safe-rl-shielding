@@ -54,7 +54,7 @@ Dfa(0, 0, 0)
         pdfa_node->initial_ = initial_;
     }
 
-    // Set pdfa node final flag if *a* subnode is final. These are accepting states/nodes.
+    // Set pdfa node final flag only if all subnodes are final. These are accepting states/nodes.
     for (Node* node : nodes_){
         ProductDfaNode* pdfa_node = (ProductDfaNode*) node;
         bool final_ = false;
@@ -81,7 +81,7 @@ Dfa(0, 0, 0)
             }
             combo_edges.push_back(edges);
         }
-        // create a cartesian product of outgoing edges for all subnodes of this pdfa node.
+        // Create a cartesian product of outgoing edges for all subnodes of this PDFA node.
         // Following these edges/transitions 'jointly' should make us end up in the relating pdfa
         // state representing all underlying target nodes.
         std::vector<std::vector<Edge*>> cart_edge = create_cartesian(combo_edges);
@@ -90,6 +90,7 @@ Dfa(0, 0, 0)
             // collect all underlying target nodes in a set
             std::set<Node*> subnode_targets;
             label_t label;
+            bool globally_valid = true;
             // combine the labels for each transition into a single label
             for(auto edge : combo_edge){
                 label = label.merge(edge->label_);
@@ -100,21 +101,25 @@ Dfa(0, 0, 0)
                     // `subnode_targets` and only add if it is false. `break` the combo_edge loop
                     // if an invalid label is found
                     //std::cout << "Invalid label combination!" << std::endl;
+                    globally_valid = false;
+                    break;
                 } else {
                     subnode_targets.insert(edge->target_);
                 }
             }
-            // find target pdfa node by following underlying node set in 'reverse' subnode->node map
-            ProductDfaNode* target_node = subnode_node_map[subnode_targets];
-            // insert link from pdfa node to pdfa node w/ combined label
-            add_edge(pdfa_node, target_node, label);
+            if(globally_valid){
+                // find target pdfa node by following underlying node set in 'reverse' subnode->node map
+                ProductDfaNode* target_node = subnode_node_map[subnode_targets];
+                // insert link from pdfa node to pdfa node w/ combined label
+                add_edge(pdfa_node, target_node, label);
+            }
         }
     }
 
     // create all combinations of subnodes, pegging on some (the last) dfa 
     // two inputs
-    verify();
-    minimize();
+   // verify();
+   // minimize();
 }
 
 std::vector<Dfa*> ProductDfa::create_combinable_dfas(std::vector<Dfa*> originals) {
