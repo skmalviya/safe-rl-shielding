@@ -53,6 +53,8 @@ parser.add_argument('-r', "--sarsa", dest='sarsa', help='Indicated whether to us
 parser.add_argument("--num-steps", dest='num_steps', help='Number of interactions', type=int, default=1000000)
 parser.add_argument("--alpha", dest='alpha', help='Learning rate alpha', type=float, default=1/5)
 parser.add_argument("--seed", dest='seed', help='Randomseed', type=int, default=0)
+parser.add_argument('-x', "--cost_per_step", dest='cost_per_step', help='Estimated cost per step',
+        type=float, default=None)
 
 
 args = parser.parse_args()
@@ -72,6 +74,7 @@ neg_reward = args.neg_reward
 huge_neg_reward = args.huge_neg_reward
 alpha = args.alpha
 seed = args.seed
+cost_per_step = args.cost_per_step
 MAX_STEPS = args.num_steps
 MIN_EPS = .00
 MIN_ALPHA = .00
@@ -79,6 +82,9 @@ random.seed(seed)
 
 cooldown_epsilon = np.linspace(exploration, MIN_EPS, MAX_STEPS)
 cooldown_alpha = np.linspace(alpha, MIN_ALPHA, MAX_STEPS)
+
+danger_zone = [(7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8), (9, 6), (9, 7), (9, 8)]
+goal_zones = [((8,0),), ((7,7),(7,8)), ((2,7),), ((0,1),(0,2),(1,1),(1,2))]
 
 pngfile = Image.open(specFile)
 pngFileBasis = specFile[0:specFile.rfind(".png")]
@@ -182,6 +188,7 @@ else:
 stateMapper = {}
 bad_states = []
 bad_state_keys = []
+bad_cells = set()
 for xA in range(0,xsize):
     for yA in range(0,ysize):
         for (csf,payoff) in [(x, 0) for x in range(NUMBER_OF_COLORS)] + [(0,1)]:
@@ -191,12 +198,16 @@ for xA in range(0,xsize):
                 if (imageData[xA+yA*xsize] != WALL):
                     pass
                 else:
+                    if (xA, yA) not in bad_cells:
+                        bad_cells.add((xA,yA))
                     bad_states.append(stateNum)
             else:
                 stateNum = len(stateMapper)                    
                 if (imageData[xA+yA*xsize] != WALL):
                     stateMapper[(xA,yA,csf,payoff)] = stateNum
                 else:
+                    if (xA, yA) not in bad_cells:
+                        bad_cells.add((xA,yA))
                     bad_state_keys.append((xA,yA,csf,payoff))
 
 BAD_STATE = len(stateMapper)
@@ -225,6 +236,62 @@ def to_dfa(encoding):
             dfa_encoding.append(str(i))
     return dfa_encoding
 
+def memoize(f):
+    memo = {}
+    def helper(x):
+        if x not in mem:
+            memo[x] = f(x)
+        return memo[x]
+    return helper
+
+N_GOALS = 4
+steps_to_goal = {}
+all_cells = set()
+
+for i in range(xsize):
+    for j in range(ysize):
+        cell = (i,j)
+        all_cells.add(cell)
+
+def move(cell, direction):
+    (x, y) = cell
+    if direction == 0:
+        x = x + 1
+    elif direction == 1:
+        y = y + 1
+    elif direction == 2:
+        x = x -1
+    elif direction == 3:
+        y = y - 1
+    return (min(max(x, 0), xsize-1), min(max(y,0),ysize-1))
+
+
+legal_cells = all_cells - bad_cells
+start_cell = (0,0)
+max_steps_goals = {}
+plan = True
+if plan:
+    for goal in range(N_GOALS):
+        max_steps_goals[goal] = float('-inf')
+        goal_zone = goal_zones[goal]
+        covered_cells = set()
+        for cell in goal_zone:
+            steps_to_goal[(cell, goal)] = 0
+            covered_cells.add(cell)
+        while len(legal_cells - covered_cells) > 0:
+            covered_cells_w = copy.deepcopy(covered_cells)
+            for cell in covered_cells_w:
+                for direction in range(4):
+                    candidate = move(cell, direction)
+                    path_len = steps_to_goal[(cell, goal)] + 1
+                    if candidate in legal_cells:
+                        if (candidate, goal) in steps_to_goal:
+                            old_candidate = steps_to_goal[(candidate,goal)]
+                        else:
+                            old_candidate = float('inf')
+                        steps_to_goal[(candidate,goal)] = min(old_candidate, path_len)
+                        max_steps_goals[goal] = max(max_steps_goals[goal], path_len)
+                        covered_cells.add(candidate)
 
 # ==================================
 # Construct MDP --> Transition file
@@ -333,7 +400,6 @@ for (a,b,c,d) in transitionLines:
 
 NUMBER_OF_BITS = int(math.ceil(math.log((len(reverseStateMapper) - 1) / (NUMBER_OF_COLORS + 1), 2))) 
 # print ("Number of bits for states:", NUMBER_OF_BITS)
-danger_zone = [(7, 6), (7, 7), (7, 8), (8, 6), (8, 7), (8, 8), (9, 6), (9, 7), (9, 8)]
 max_steps_in_zone = 3
 
 num_steps_on_bomb = 3
@@ -754,9 +820,9 @@ class Map(Environment):
             
     def getSensors(self):
         return [self.state]
-        
+
 class VisitAllColors(Task):
-    def __init__(self, env):
+    def __init__(self, env, gamma):
         Task.__init__(self, env)
         self.last_reward = 0
         self.task_logger = open('task.log', 'w')
@@ -770,6 +836,39 @@ class VisitAllColors(Task):
 
         self.env.penalty = 0
         return self.last_reward
+
+class VisitAllColorsShaped(VisitAllColors):
+    def __init__(self, env, gamma, cost_per_step):
+        VisitAllColors.__init__(self, env, gamma)
+        self.prev_state = None
+        self.cost_step = cost_per_step
+
+    def potential(self, state):
+        (x, y, goal, _) = state
+        steps_taken = max_steps_goals[goal] - steps_to_goal[((x,y), goal)]
+        return steps_taken * self.cost_step
+
+    def get_shaped_reward(self, state):
+        # goals are equal, potential is difference between steps
+        if self.prev_state is None:
+            return 0.0
+        if state[3] == self.prev_state[3]:
+            shaped_reward = self.potential(state) - self.potential(self.prev_state)
+        else:
+            # goals are not equal, potential difference is a single step cost
+            shaped_reward = self.cost_step
+        return shaped_reward
+
+    def getReward(self):
+        ret = self.last_reward
+        self.last_reward = reverseStateMapper[self.env.state][3] - self.env.penalty
+        state = reverseStateMapper[self.env.state]
+        self.last_shaped_reward = self.get_shaped_reward(state)
+#        self.task_logger.write('getReward {} - {}\n'.format(self.last_reward + self.env.penalty, self.env.penalty))
+        self.env.penalty = 0
+        self.prev_state = state 
+        return self.last_reward + self.last_shaped_reward
+        
 
         
 class MyExperiment(Experiment):
@@ -1002,15 +1101,19 @@ class MyExperiment(Experiment):
 #
 # enemies = []
 
+gamma = .95
 shield = Shield()
 level = Map()
-task = VisitAllColors(level)
+if cost_per_step:
+    task = VisitAllColorsShaped(level, gamma=gamma, cost_per_step=cost_per_step)
+else:
+    task = VisitAllColors(level, gamma=gamma)
+
 controller = MyActionValueTable(len(reverseStateMapper), 5)
 if load_file != None:
     controller.initialize(np.fromfile(load_file))
 else:
     controller.initialize(0.)
-gamma = .95
 if not args.sarsa:
     learner = MyQ(alpha, gamma, neg_reward)
     learner.explorer = MyGreedyExplorer(shield_options, exploration)
