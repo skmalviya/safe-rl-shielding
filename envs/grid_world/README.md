@@ -1,11 +1,38 @@
 # Grid World
 
-##Requirements:
+## First grid_world experiment with no-shield:
+
+```
+$ conda activate openai_env
+$ python simulator.py 9x9_illustrative/9x9_illustrative.png -t=0.6 -o=0 -c=9x9_illustrative/9x9_illustrative_0 --num-steps=100000
+```
+## Second grid_world experiment on 15x9_cycling with no-shield:
+```
+python simulator.py 15x9_cycling/15x9_cycling.png -t=0.6 -o=0 -c=15x9_cycling/15x9_cycling_1 --num-steps=100000
+```
+
+## **9x9_illustrative** image-data:
+```
+5 5 5 5 5 5 5 5 2
+1 1 0 0 0 0 0 0 0
+1 1 5 5 5 5 5 5 5
+5 5 0 0 5 5 5 5 5
+5 5 5 5 5 5 5 5 5
+5 5 5 5 5 0 5 0 0
+5 0 0 0 5 0 5 5 5
+5 0 3 0 5 5 0 4 5
+5 5 5 5 5 5 5 4 5
+```
+Note: it's image:
+
+<img src="grid-world_9x9_illustrative.png" alt="drawing" width="400"/>
+
+## Requirements:
  - Python 2.7
  - [Pygame](http://www.pygame.org/download.shtml)
  - [PyBrain](http://pybrain.org)
  - Some python packages (numpy, scipy, PIL, ..)
- 
+
 ## Usage:
 We provided 2 packages: **9x9\_illustrative** and **15x9_cycling**
 
@@ -19,9 +46,9 @@ E.g: python simulator.py 9x9\_illustrative/9x9\_illustrative.png -t=.6 -o=3 -c=9
  - The parameter **--num-steps** allows to set an upper bound for the simulation
  - The parameter **-g** generates new specification files and terminates (no simulation done)
  - Parameters **-s** and **-l** can be used to save/load the _Q_-tables
- 
+
 If there is the need to create a new package:
-The first parameter specifies which map should be loaded. It has to be a indexed PNG file. In the same directory, there has to be a parameter file, with the same name, but the _.params_ extension. For each shield variant, a file with e.g. "\_1.py" for the 1-action variant has to be provided. Colors, bombs, etc. can be set in the parameter file. It's best to look at an existing one an copy most of it. 
+The first parameter specifies which map should be loaded. It has to be a indexed PNG file. In the same directory, there has to be a parameter file, with the same name, but the _.params_ extension. For each shield variant, a file with e.g. "\_1.py" for the 1-action variant has to be provided. Colors, bombs, etc. can be set in the parameter file. It's best to look at an existing one an copy most of it.
 
 ## Generator script
 gen\_data.sh _[base\_name]_ _[epsilon]_ _[number\_of\_iterations]_ generates data for no shield, shielded with 1 and 3 actions and shielded incl. punishments for 1 and 3 actions.

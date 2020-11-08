@@ -1,7 +1,7 @@
 __author__ = 'Tom Schaul, tom@idsia.ch'
 
 from scipy import array, exp, tanh, clip, log, dot, sqrt, power, pi, tan, diag, rand, real_if_close
-from scipy.linalg import inv, det, svd, logm, expm2
+from scipy.linalg import inv, det, svd, logm, expm
 
 
 def semilinear(x):

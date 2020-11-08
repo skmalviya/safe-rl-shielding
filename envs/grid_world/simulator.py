@@ -1,7 +1,8 @@
 #!/usr/bin/python
 #
 # Simulates an MDP-Strategy
-
+import warnings
+warnings.filterwarnings('ignore')
 import math
 import os
 import sys, code
@@ -141,7 +142,10 @@ if "colorOrder" in allParams:
     colors = eval(allParams["colorOrder"])
 else:
     assert(max(imageData) == NUMBER_OF_COLORS + 1)
-    colors = range(max(imageData) + 1)
+    if __import__('sys').version_info[:1][0]==2:
+        colors = range(max(imageData) + 1)
+    elif __import__('sys').version_info[:1][0]==3:
+        colors = [*range(max(imageData) + 1)]
     colors.remove(WALL) 
     colors.remove(NORMAL_FIELD)
 
@@ -398,6 +402,8 @@ if gen_spec:
             transitions.append("{0} 1 -1".format(state))
             
             actions = range(8)
+            if __import__('sys').version_info[:1][0]==3:
+                actions = [*actions]
             actions.remove(4) # remove stay
             for action in actions:
                 action_enc = [str(-(idx + 2) if x == '0' else (idx + 2)) for idx, x in enumerate(list(bin(action)[2:].rjust(3, '0')))]
@@ -448,11 +454,11 @@ if gen_spec:
         num_state_bits = 7
         for num_steps_in_zone in range(1,end_state):
             print ("state " + str(num_steps_in_zone))
-            for state in xrange(0, len(reverseStateMapper) - 1, 5): #exclude error state
+            for state in range(0, len(reverseStateMapper) - 1, 5): #exclude error state
                 (x,y,_,_) = reverseStateMapper[state]
-                state_enc = [str(-(idx + 1) if bit == '0' else (idx + 1)) for idx, bit in enumerate(list(bin(state / 5)[2:].rjust(num_state_bits, '0')))]
+                state_enc = [str(-(idx + 1) if bit == '0' else (idx + 1)) for idx, bit in enumerate(list(bin(int(state / 5))[2:].rjust(num_state_bits, '0')))]
                 zone_idx = 0
-                for idx, zone in zones.iteritems():
+                for idx, zone in zones.items():
                     if (x,y) in zone:
                         zone_idx = idx
                         break
@@ -472,7 +478,7 @@ if gen_spec:
                         next_zone_idx = 0
                         for (next_x,next_y,prob) in succs:
                             if prob == 0: continue
-                            for idx, zone in zones.iteritems():
+                            for idx, zone in zones.items():
                                 if (next_x,next_y) in zone:
                                     next_zone_idx = max(next_zone_idx, idx)
                         print( "action " + str(action) + " leads to zone: " + str(next_zone_idx))
@@ -489,7 +495,7 @@ if gen_spec:
                 transitions.append("{0} 1 {1}\n".format(num_steps_in_zone, " ".join(state_enc)))
           
             #print ununsed state transitions
-            for state in xrange((len(reverseStateMapper) - 1) / 5, int(math.pow(2, num_state_bits))):
+            for state in range(int((len(reverseStateMapper) - 1) / 5), int(math.pow(2, num_state_bits))):
                 state_enc = [str(-(idx + 1) if x == '0' else (idx + 1)) for idx, x in enumerate(list(bin(state)[2:].rjust(num_state_bits, '0')))]
                 transitions.append("{0} 1 {1}\n".format(num_steps_in_zone, " ".join(state_enc)))
              
@@ -708,7 +714,7 @@ class MyExperiment(Experiment):
         global draw
         
         resetInThisRound = False
-        
+
         # Process events
         for event in pygame.event.get():
             if event.type == pygame.locals.QUIT or (event.type == pygame.locals.KEYDOWN and event.key in [pygame.locals.K_ESCAPE,pygame.locals.K_q]):
@@ -724,7 +730,7 @@ class MyExperiment(Experiment):
                 self.speed = max(self.speed-1,1)
             if (event.type == pygame.locals.KEYDOWN and event.key == pygame.locals.K_d):
                 draw = not draw
-            
+
         # if self.isCrashed:
   #           self.isCrashed = False
   #           # level.reset()
@@ -737,7 +743,7 @@ class MyExperiment(Experiment):
                 
         old = (self.robotXA, self.robotYA)
         (self.robotXA,self.robotYA,csf,payoff) = reverseStateMapper[level.state]
-        
+
         if not self.isCrashed and enemies_enabled:
             enemy_handler.update(old)
             for e in enemy_handler.getEnemyPositions():
@@ -768,8 +774,8 @@ class MyExperiment(Experiment):
                 q_max = max(q_max, max(controller.getActionValues(state)))
                 
             # Draw Field
-            for x in xrange(0,xsize):
-                for y in xrange(0,ysize):
+            for x in range(0,xsize):
+                for y in range(0,ysize):
                     paletteColor = imageData[y*xsize+x]
                     color = palette[paletteColor*3:paletteColor*3+3]
                     pygame.draw.rect(self.screenBuffer,color,((x+1)*MAGNIFY,(y+1)*MAGNIFY,MAGNIFY,MAGNIFY),0)
@@ -786,8 +792,8 @@ class MyExperiment(Experiment):
             # pygame.draw.rect(screenBuffer,boundaryColor,(0,0,MAGNIFY*(xsize+2),MAGNIFY),0)
 
             # Draw cell frames
-            for x in xrange(0,xsize):
-                for y in xrange(0,ysize):
+            for x in range(0,xsize):
+                for y in range(0,ysize):
                     pygame.draw.rect(self.screenBuffer,(0,0,0),((x+1)*MAGNIFY,(y+1)*MAGNIFY,MAGNIFY,MAGNIFY),1)
                     if (x+1,y+1) in bombs:
                         self.screenBuffer.blit(self.bombImage, ((x+1)*MAGNIFY+1,(y+1)*MAGNIFY+1))
@@ -795,16 +801,16 @@ class MyExperiment(Experiment):
 
             # Draw "Good" Robot
             if self.robotXA!=-1:
-                pygame.draw.circle(self.screenBuffer, (192,32,32), ((self.robotXA+1)*MAGNIFY+MAGNIFY/2,(self.robotYA+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3-2, 0)
-                pygame.draw.circle(self.screenBuffer, (255,255,255), ((self.robotXA+1)*MAGNIFY+MAGNIFY/2,(self.robotYA+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3-1, 1)
-                pygame.draw.circle(self.screenBuffer, (0,0,0), ((self.robotXA+1)*MAGNIFY+MAGNIFY/2,(self.robotYA+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3, 1)
+                pygame.draw.circle(self.screenBuffer, (192,32,32), (int((self.robotXA+1)*MAGNIFY+MAGNIFY/2),int((self.robotYA+1)*MAGNIFY+MAGNIFY/2)) , int(MAGNIFY/3-2), 0)
+                pygame.draw.circle(self.screenBuffer, (255,255,255), (int((self.robotXA+1)*MAGNIFY+MAGNIFY/2),int((self.robotYA+1)*MAGNIFY+MAGNIFY/2)) , int(MAGNIFY/3-1), 1)
+                pygame.draw.circle(self.screenBuffer, (0,0,0), (int((self.robotXA+1)*MAGNIFY+MAGNIFY/2),int((self.robotYA+1)*MAGNIFY+MAGNIFY/2)) , int(MAGNIFY/3), 1)
 
             # Draw "Bad" Robots
             if enemies_enabled:
                 for (e_x, e_y) in enemy_handler.getEnemyPositions():
-                    pygame.draw.circle(self.screenBuffer, (32,32,192), ((e_x+1)*MAGNIFY+MAGNIFY/2,(e_y+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3-2, 0)
-                    pygame.draw.circle(self.screenBuffer, (255,255,255), ((e_x+1)*MAGNIFY+MAGNIFY/2,(e_y+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3-1, 1)
-                    pygame.draw.circle(self.screenBuffer, (0,0,0), ((e_x+1)*MAGNIFY+MAGNIFY/2,(e_y+1)*MAGNIFY+MAGNIFY/2) , MAGNIFY/3, 1)
+                    pygame.draw.circle(self.screenBuffer, (32,32,192), (int((e_x+1)*MAGNIFY+MAGNIFY/2),int((e_y+1)*MAGNIFY+MAGNIFY/2)) , int(MAGNIFY/3-2), 0)
+                    pygame.draw.circle(self.screenBuffer, (255,255,255), (int((e_x+1)*MAGNIFY+MAGNIFY/2),int((e_y+1)*MAGNIFY+MAGNIFY/2)), int(MAGNIFY/3-1), 1)
+                    pygame.draw.circle(self.screenBuffer, (0,0,0), (int((e_x+1)*MAGNIFY+MAGNIFY/2),int((e_y+1)*MAGNIFY+MAGNIFY/2)) , int(MAGNIFY/3), 1)
                 
 
             # zone_width = danger_zone[-1][0] - danger_zone[0][0] + 1
